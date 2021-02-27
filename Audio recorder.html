@@ -1,0 +1,314 @@
+<!doctype html>
+<html>
+<head>
+    <title>Audio Recorder</title>
+    <link rel="icon" type="image/png" href="https://psetestseite.lima-city.rocks/wp-content/uploads/2021/02/cropped-logo_small-e1613728295685.png" />
+    <style type="text/css">
+
+
+              [data-role="controls"] > button {
+                margin-top: 50px;
+                margin-left: 50px;
+                margin-bottom: 50px;
+                outline: none;
+                display: block;
+                border: none;
+                background-color: #D9AFD9;
+                background-image: -webkit-gradient(linear, left bottom, left top, from(#86BC25), to(#97D9E1)); 
+                width: 60px;
+                height: 60px;
+                border-radius: 50%;
+                text-indent: -1000em;
+                cursor: pointer;
+                box-shadow: 0px 0px 0px 20px #fff, 0px 0px 0px 30px #333;
+               }
+
+            [data-role="controls"] > button[data-recording="true"] {
+                background-color: #ff2038;
+                background-image: -webkit-gradient(linear, left bottom, left top, from(#ff2038), to(#b30003));
+                background-image: linear-gradient(0deg, #ff2038 0%, #b30003 100%);
+               }
+
+            [data-role="recordings"] > .audioReihe > a {
+                display: inline-block;
+                text-align: center;
+                font-size: ;
+                line-height: 50px;
+                vertical-align: middle;
+                width: 50px;
+                height: 50px;
+                border-radius: 20px;
+                color: #fff;
+                font-weight: bold;
+                text-decoration: underline;
+                background-color: #0093E9;
+                background-image: -webkit-gradient(linear, left bottom, left top, from(#0093E9), to(#80D0C7));
+                background-image: linear-gradient(0deg, #0093E9 0%, #80D0C7 100%);
+                cursor: pointer;
+
+            }
+
+
+            input[type=button] {
+              margin: 200px left;
+              background-color: #4CAF50;
+              border: none;
+              color: white;
+              padding: 16px 32px;
+              text-decoration: none;
+              cursor: pointer;
+
+            
+               }
+
+
+        </style>
+
+    <script type="text/javascript" src="https://code.jquery.com/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.9.1/jquery-ui.min.js"></script>
+    <script src="https://lil-ka.github.io/recorder.js"></script>
+    <script>
+            //jQuery Javascript Bibliothek zur Manipulation des DOM 
+         //Bibliothek um auf Objekte, Funktionen, Methoden etc. zuzugreifen
+            
+            //Callback zur Ready Funktion, um das Dokument mainpulierbar zu machen 
+            jQuery(document).ready(function () {
+             //Die JQuery Variable definieren
+                var $ = jQuery;
+              //Nutzt variablen aus recorder.js, die Methoden zur start und stop Funktionen beihaltet und die Dateien lokal speichert
+                var myRecording = {
+                    objects: {
+                        context: null,
+                        stream: null,
+                        recorder: null
+                    },
+                    
+            // Erste Funktion, die aufgerufen wird, wenn der Button geklickt wird -> get Audiocontext or webkitAudiokontext (Audio Schnittstelle () mit BaudioReiheser)
+            // Aufgrund der if Schleife, werden Audiocontext oder webkitAudiokontext nur einmal lokal gespeichert und nicht immer wieder neu angefragt
+                    init: function () {
+                        if (null === myRecording.objects.context) {
+                            myRecording.objects.context = new (
+                                    window.AudioContext || window.webkitAudioContext
+                                    );
+                        }
+                    },
+                
+                // var options definiert welche Medien des Users genutzt werden
+                // Aufgrufen der function mit Übermittlung des Argumentes stream
+                    start: function () {
+                        var options = {audio: true, video: false};
+                        navigator.mediaDevices.getUserMedia(options).then(function (stream) {
+                            myRecording.objects.stream = stream; // stream lokal lagern im myRecording Objekt
+                            myRecording.objects.recorder = new Recorder(
+                                    myRecording.objects.context.createMediaStreamSource(stream),
+                                    {numChannels: 1} // neue Instanz des Objektes myRecording erstellen und Argumente weitergeben -> jetzt startet das 
+                                    
+                            );
+                            myRecording.objects.recorder.record();
+                        }).catch(function (err) {}); //"tatsächliche" Aufnahme
+                    },
+                    
+                     //bekommt Objekt ím Aufrud der Funktion stop()
+                    stop: function (listObject) {
+
+                        if (null !== myRecording.objects.stream) {
+                            myRecording.objects.stream.getAudioTracks()[0].stop();
+                        }
+                        if (null !== myRecording.objects.recorder) {
+                            myRecording.objects.recorder.stop();
+
+                            //Validiert das Objekt _> checkt ob das Objekt tatsächlich ein Objekt ist (nicht null und größer 0)
+                            if (null !== listObject
+                                    && 'object' === typeof listObject
+                                    && listObject.length > 0) {
+
+                                // Exportiert die WAV file -> recorder.js
+                                //ruft die Funktion exprtWAV() auf 
+                                //recordWAV() konvertiert die Audioaufnahme in eine Datei und gibt diese als blob weiter
+                                //erstellt eine URL, die nur durch die aktuelle baudioReiheser Sitzung erreicht werden kann createObjectURL()
+                                myRecording.objects.recorder.exportWAV(function (blob) {
+                                    var url = (window.URL || window.webkitURL)
+                                            .createObjectURL(blob);
+
+                                   // Dowload Link und Download Datei  
+                                    var audioObject = $('<audio controls></audio>')
+                                            .attr('src', url);
+
+                                    // Prepare the download link
+                                    // create Download Object which has special character of araudioReihe pointing down (&#9660)
+                                    //define link to same url (from blob)
+                                    //define custom html attribute to change file name when file is downloaded
+                                    var downloadObject = $('<a>&#9660;</a>') // ein DownloadObjekt erstellen, dass über das spezielle Zeichen eines herunterschauenden Pfeils eingefügt wird
+                                            .attr('href', url)
+                                            .attr('download', 'Audiocomment'+' '+ new Date().toUTCString() + '.wav'); //Den Namen der Datei definieren, die Heruntergeladen wird
+
+                                    // Alles auf der Seite anzeigen lassen 
+                                    var holderObject = $('<div class="audioReihe"></div>') //div class definieren und das downloadObjekt dem holderObjekt hinzufügen, dass das angezeigt wird
+                                            .append(audioObject)
+                                            .append(downloadObject);
+
+                                     // dem listObject das holderObject hinzufügen
+                                    listObject.append(holderObject);
+                                });
+                            }
+                        }
+                    }
+                };
+
+                // Darstellen der Liste an Aufnahmen vorbereiten
+                var listObject = $('[data-role="recordings"]');
+
+                // Aufnahmebutton mit click funktion ausstatten
+                $('[data-role="controls"] > button').click(function () {
+                    // When Button is clicked  init function is called Initialize the recorder
+                    myRecording.init();
+                 //Initialisieren ist wichtig, weil der BaudioReiheser eine Aktion des Nutzers fordert, wenn aufgezeichnet werden soll
+
+                 
+                    // Status des Button (gedrückt oder nicht gedrückt) wird als boolean durch !! festgelegt
+                    var buttonState = !!$(this).attr('data-recording');
+
+                     //  false -> button wurde gedrückt und start() wird aufgerufen
+                    if (!buttonState) {
+                        $(this).attr('data-recording', 'true');
+                        myRecording.start();
+                    } else {
+                        $(this).attr('data-recording', '');  //Wenn der Button erneut gedrückt wird, ändert ich der Button Status und stop() wird aufgerufen 
+                        myRecording.stop(listObject); //das listObject wird als Parameter weitergegeben 
+
+                    }
+                });
+            });
+        </script>
+
+   
+    
+
+    <script>
+    //Callback function to the ready method
+    $(document).ready(function() {
+
+    //Variable zum Count Anzahl Kommentare
+     var anzCom = 0;
+
+        // Create a div element (container) using JQuery ".css()" class.
+        var container = $(document.createElement('div')).css({
+            padding: '5px', margin: '20px', width: '170px', border: '1px dashed',
+            borderTopColor: '#999', borderBottomColor: '#999',
+            borderLeftColor: '#999', borderRightColor: '#999'
+        });
+
+
+           // if Schleife max. 20 Kommentare, Wenn versuchgt wird mehr als 20 Kommentare zu machen -> wird eine Meldung ausgegeben
+        $('#btnAdd').click(function() {
+            if (anzCom <= 19) {
+
+                // Anzahl Kommentare um 1 erhöhen und Textbox zu container für Input hinzufügen mit Placeholder Text und Nummer des Kommentars
+                anzCom = anzCom + 1;
+                $(container).append('<input type=text class="input" id=tb' + anzCom + ' ' +
+                    'value="Kommentar ' + anzCom + '" />','<input type=time class="input" id=tb' + anzCom + ' ' + 'value="' + anzCom + '" />');
+
+                // If Schleife, dass wenn mind. 1 Element kreirt wurde der Submit Button erscheint und wenn dieser Button geklickt wird, die Funktion getTextValue() aufgerzfen wird
+                if (anzCom == 1) {
+                    var divSubmit = $(document.createElement('div'));
+                    $(divSubmit).append('<input type=button class="bt"' +'onclick="GetTextValue()"' + 'id=btSubmit value="Alle Kommenatre abschicken" />');
+                }
+
+                // beide Objekte (container mit Textbox und Zeit und den Submit Button dem Main div hinzufügen
+                $('#main').after(container, divSubmit);
+                }
+
+                // Wenn über 20 Textboxen hinzugefügt werden soll eine Meldung ausgegeben werden + die Button für weiteres hinzufügen werden disabled
+                else {
+                $(container).append('<label>Limit der Kommentare erreicht</label>');
+                $('#btnAdd').attr('class', 'bt-disable');
+                $('#btnAdd').attr('disabled', 'disabled');
+                }
+        });
+
+        // Funktion um Kommentare löschen zu können if Schleife mit der immer der letzte Kommentar gelöscht wird
+        $('#btnRemove').click(function() {
+            if (anzCom != 0) { $('#tb' + anzCom).remove(); anzCom = anzCom - 1; } //letzter Kommentar
+
+            //Container mit Kommentar leeren + löschen (löschen notwendig, da sonst ein Outline bleibt
+            if (anzCom == 0) {
+                $(container)
+                    .empty()
+                    .remove();
+            // Submit Button löschen und Add Button wieder benutzbar machen
+                $('#btSubmit').remove();
+                $('#btnAdd')
+                    .removeAttr('disabled')
+                    .attr('class', 'bt');
+            }
+        });
+
+        //Funktion um alle Kommentare löschen zu können (keine If Schliefe nötig es wird einfach der container geleert und gelöscht)
+        $('#btnRemoveAll').click(function() {
+            $(container)
+                .empty()
+                .remove()
+           // Counter um Kommentare zu zählen wird wieder auf 0 gesetzt
+            $('#btSubmit').remove();
+            anzCom = 0;
+
+            $('#btnAdd')
+                .removeAttr('disabled')
+                .attr('class', 'bt');
+        });
+    });
+
+    // Funktion, dass der Inhalt aus der Textbox ausgelesen wird und dargestellt wird
+    // Variable des Ausgabefeldes (div) des Kommentares
+    var divValue = '';
+
+    // Variable der ausgelesenen Wertes aus der Textbox
+    var values = '';
+
+    //Löschen und Leeren aller vorherigen vorhandenen divs bzw KOmmentare -> sonst doppelt sich Kommentar 1,2 etc.
+    function GetTextValue() {
+        $(divValue)
+            .empty()
+            .remove()
+
+        //Der Inhalt jeder Funktion  wird ausgelesen -> .each() iteriert über die DOM elemente, die Teil des JQuery Objektes sind
+        $('.input').each(function() {
+            //divValue wird neu erstellt
+            divValue = $(document.createElement('div')).css({
+                padding:'5px', width:'200px'
+            });
+            // this. bezieht sich auf das aktuelle DOM element
+            values += this.value + '<br />'
+        });
+
+        //Werte werden dem div Element hinzugefügt
+        $(divValue).append(values);
+        //Div element wird Body hinzugefügt
+        $('body').append(divValue);
+    }
+</script>
+
+
+</head>
+<body>
+
+    <div class="container">
+        <h1 align="left">Audio und Textkommentare</h1>
+        <div data-role="controls">
+            <button>Record</button>
+        </div>
+    <div data-role="recordings"></div>
+    
+    <br>
+    <div class="btn">
+    <div id="main">
+        <input type="button" id="btnAdd" value="Kommentar hinzufügen" class="bt" />
+        <input type="button" id="btnRemove" value="Letzten Kommentar entfernen" class="bt" />
+        <input type="button" id="btnRemoveAll" value="Alle Kommentare entfernen" class="bt" />
+
+    </div>
+    </div>
+    </div>
+
+</body>
+</html>
